@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.appsys.dao.developer.AppInfoMapper">
+
+    <!--通过appinfo对象添加一条数据-->
+    <insert id="addAppInfo" parameterType="appInfo">
+    	insert into app_info(softwareName,APKName,supportROM,interfaceLanguage,softwareSize,  
+    					devId,appInfo,status,flatformId,categoryLevel1,categoryLevel2, 
+    					categoryLevel3,downloads,logoPicPath,logoLocPath,createdBy,creationDate)  
+    					values(#{softwareName},#{APKName},#{supportROM},#{interfaceLanguage},  
+    					#{softwareSize},#{devId},#{appInfo},#{status},#{flatformId},#{categoryLevel1}, 
+    					#{categoryLevel2},#{categoryLevel3},#{downloads},#{logoPicPath},#{logoLocPath},#{createdBy},#{creationDate})
+    </insert>
+    <!-- 通过数据字典中的编码查询字典中内容 -->
+    <select id="selectDictionaryByTypeCode" resultType="DataDictionary">
+    	select * from data_dictionary where typeCode=#{typeCode}
+    </select>
+    
+    <!-- 通过typeCode和valueID，查找字典中对应的名字 -->
+    <select id="selectValueNameByIdAndTypeCode" resultType="String">
+    	select valueName from data_dictionary where valueId=#{valueId} and typeCode=#{typeCode}
+    </select>
+    
+    <!-- 通过id 查询分类表 -->
+    <select id="selectCategoryBypId" resultType="AppCategory">
+    	select * from app_category where parentId = #{parentId}
+    </select>
+    
+    <!-- 通过id 查询类别名 -->
+    <select id="selectCategoryNameById" resultType="String">
+    	select categoryName from app_category where id=#{id}
+    </select>
+    
+	<!-- 通过APK的名称查找APP -->
+	<select id="selectAppInfoByAPKName" resultType="AppInfo">
+		select * from app_info where APKName=#{APKName}
+	</select>
+	
+	<!-- 通过Id查找App的基础信息 -->
+	<select id="selectAppInfoById" resultType="AppInfo">
+		select * from app_info where id=#{appId}
+	</select>
+	
+	<!-- 通过条件查询的查询APP的基本信息 -->
+	<select id="selectAppInfoList" resultType="AppInfo"  parameterType="Map">
+		select ai.*,av.versionNo as versionNo from app_info ai left outer join app_version av on av.id=ai.versionId
+			<where>
+				<if test="softwareName!=null and softwareName!=''">
+					and ai.softwareName Like CONCAT('%',#{softwareName},'%')
+				</if>
+				<if test="status!=null and status!=''">
+					and ai.status=#{status}
+				</if>
+				<if test="flatformId!=null and flatformId!=''">
+					and ai.flatformId=#{flatformId}
+				</if>
+				<if test="categoryLevel1!=null and categoryLevel1!=''">
+					and ai.categoryLevel1=#{categoryLevel1}
+				</if>
+				<if test="categoryLevel2!=null and categoryLevel2!=''">
+					and ai.categoryLevel2=#{categoryLevel2}
+				</if>
+				<if test="categoryLevel3!=null and categoryLevel3!=''">
+					and ai.categoryLevel3=#{categoryLevel3}
+				</if>
+				<if test="devId!=null and devId!=''">
+					and ai.devId=#{devId}
+				</if>
+			</where>
+			ORDER BY creationDate DESC limit #{currentPageNo} ,#{pageSize}
+	</select>
+	
+	<!-- 通过条件查询的查询APP信息结果的条数 -->
+	<select id="selectAppInfoNum" resultType="int"  parameterType="Map">
+		select count(1) as count from app_info ai left outer join app_version av on av.id=ai.versionId
+			<where>
+				<if test="softwareName!=null and softwareName!=''">
+					and ai.softwareName Like CONCAT('%',#{softwareName},'%')
+				</if>
+				<if test="status!=null and status!=''">
+					and ai.status=#{status}
+				</if>
+				<if test="flatformId!=null and flatformId!=''">
+					and ai.flatformId=#{flatformId}
+				</if>
+				<if test="categoryLevel1!=null and categoryLevel1!=''">
+					and ai.categoryLevel1=#{categoryLevel1}
+				</if>
+				<if test="categoryLevel2!=null and categoryLevel2!=''">
+					and ai.categoryLevel2=#{categoryLevel2}
+				</if>
+				<if test="categoryLevel3!=null and categoryLevel3!=''">
+					and ai.categoryLevel3=#{categoryLevel3}
+				</if>
+				<if test="devId!=null and devId!=''">
+					and ai.devId=#{devId}
+				</if>
+			</where>
+	</select>
+	
+	<!-- 通过Id删除app的logo图片 -->
+	<update id="delLogoById">
+		update app_info set logoPicPath='',logoLocPath='' where id=#{id}
+	</update>
+	
+	<!-- 通过id对APPInfo表中的信息修改 -->
+	<update id="modifyAppInfoById" parameterType="AppInfo">
+		update app_info		
+		<set>
+			softwareName=#{softwareName},supportROM=#{supportROM},interfaceLanguage=#{interfaceLanguage},
+			softwareSize=#{softwareSize},appInfo=#{appInfo},flatformId=#{flatformId},categoryLevel1=#{categoryLevel1},
+			categoryLevel2=#{categoryLevel2},categoryLevel3=#{categoryLevel3},downloads=#{downloads},
+			<if test="logoLocPath!=null and logoLocPath!=''">
+				logoLocPath=#{logoLocPath},
+				logoPicPath=#{logoPicPath},
+			</if>
+			<if test="status!=null and status!=''">
+				status=#{status},
+			</if>
+			modifyBy=#{modifyBy},modifyDate=#{modifyDate}
+		</set> 
+		<where>
+			<if test="id!=null">id=#{id}</if>
+		</where>
+	</update>
+	
+	<!-- 通过appId删除App记录 -->
+	<delete id="delAppInfoById">
+		delete from app_info where id=#{id}
+	</delete>
+	
+	<!-- 通过APPID对App上架下架操作 -->
+	<update id="onSaleOroffSale" parameterType="Map">
+		update app_info
+			<set>
+				<if test="status!=null and status!=''">
+					status=#{status},
+				</if>
+				<if test="onSaleDate!=null and onSaleDate!=''">
+					onSaleDate=#{onSaleDate},
+				</if>
+				<if test="offSaleDate!=null and offSaleDate!=''">
+					offSaleDate=#{offSaleDate},
+				</if>
+			</set>
+			<where>
+				<if test="id!=null">id=#{id}</if>
+			</where>
+	</update>
+	<!-- 点击添加版本后，向app_info表中更新最新版本 -->
+	<update id="updateVersionNo">
+		update app_info set versionId=(select max(id) from app_version where appId=#{id}) where id=#{id}
+	</update>
+	<!-- 通过开发者的code查询出devUser -->
+	<select id="selectDevUser" resultType="DevUser">
+		select * from dev_user where devCode=#{devCode}
+	</select>
+	
+	
+	
+</mapper>

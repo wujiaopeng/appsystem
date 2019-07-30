@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<beans xmlns="http://www.springframework.org/schema/beans"  
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  
+        xmlns:aop="http://www.springframework.org/schema/aop"  
+        xmlns:p="http://www.springframework.org/schema/p"  
+        xmlns:tx="http://www.springframework.org/schema/tx"  
+        xmlns:context="http://www.springframework.org/schema/context"  
+        xsi:schemaLocation="   
+            http://www.springframework.org/schema/beans 
+            http://www.springframework.org/schema/beans/spring-beans-2.5.xsd   
+            http://www.springframework.org/schema/aop 
+            http://www.springframework.org/schema/aop/spring-aop-2.5.xsd   
+            http://www.springframework.org/schema/tx 
+            http://www.springframework.org/schema/tx/spring-tx-2.5.xsd 
+            http://www.springframework.org/schema/context 
+            http://www.springframework.org/schema/context/spring-context.xsd">  
+    <!--
+    	使spring扫描包下的所有类，让标注spring注解的类生效 
+    	若扫描到有@Component @Controller@Service等这些注解的类，则把这些类注册为bean
+    -->
+     <context:component-scan base-package="com.appsys.pojo"/>
+    <context:component-scan base-package="com.appsys.dao"/>
+    <context:component-scan base-package="com.appsys.services"/>
+
+    <!-- 引入属性文件database.properties -->
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer" >
+        <property name="location">
+            <value>classpath:database.properties</value>
+        </property>
+    </bean>
+
+    <!-- 配置数据源 -->
+    <bean id = "dataSource" class ="org.apache.commons.dbcp.BasicDataSource" >
+        <property name="driverClassName" value="${driver}"></property>
+        <property name="url" value="${url}"></property>
+        <property name="username" value="${user}"></property>
+        <property name="password" value="${password}"></property>
+         <!--配置 初始化大小 -->
+        <property name="initialSize" value="${initialSize}"></property>
+         <!-- 最大连接数 -->
+        <property name="maxActive" value="${maxActive}"></property>
+        <!--最大、最小等待连接的数量，设置为0，表示没有限制  -->
+        <property name="maxIdle" value="${maxIdle}"></property>
+        <property name="minIdle" value="${minIdle}"></property>
+        <!--最大等待秒数，单位为毫秒，超过时间会报出错误信息  -->
+        <property name="maxWait" value="${maxWait}"></property>
+        <!-- 是否自我中断，默认值为false -->
+        <property name="removeAbandoned" value="${removeAbandoned}"></property>
+        <!-- 几秒后数据连接会自动断开，在removeAbandoned为true，提供值 -->
+        <property name="removeAbandonedTimeout" value="${removeAbandonedTimeout}"></property>
+        <!-- 是否要进行检测 -->
+        <property name="testWhileIdle" value="true"></property>
+         <!--配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位为毫秒  -->
+        <property name="timeBetweenEvictionRunsMillis" value="60000"></property>
+         <!-- 申请连接时执行validationQuery检测连接是否有效，做了这个配置会降低性能 -->
+        <property name="testOnBorrow" value="false"></property>
+         <!-- 归还连接时执行 validationQuery检测连接是否有效，做了这个配置会降低性能-->
+        <property name="testOnReturn" value="false"></property>
+         <!-- 用于验证连接是否成功的查询SQL语句，SQL语句必须至少要返回一行数据，如你可以见到的设置为：“select count（*） from 表名” -->
+        <property name="validationQuery" value="select 1"></property>
+    </bean>
+
+    <!-- 配置sqlSessionFactory -->
+    <bean id = "sqlSessionFactory" class ="org.mybatis.spring.SqlSessionFactoryBean" >
+        <property name="dataSource" ref="dataSource"></property>
+        <property name="configLocation" value="classpath:mybatis-config.xml"></property>
+    </bean>
+
+    <!-- MapperScannerConfigurer -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer" >
+        <property name="basePackage" value="com.appsys.dao"></property>
+    </bean>
+
+
+    <!-- 配置事务管理 -->
+    <bean id="txManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!-- 定义事务管理器规则 -->
+    <tx:advice id="myAdvice" transaction-manager="txManager">
+        <tx:attributes>
+            <tx:method name="get*" propagation="NEVER"></tx:method>
+            <tx:method name="set*" propagation="NEVER"></tx:method>
+            <tx:method name="app*"  propagation="REQUIRED" rollback-for="Exception"  />
+            <tx:method name="*" />
+        </tx:attributes>
+    </tx:advice>
+
+    <!-- 将规则应用到对应的接口方法 -->
+    <aop:aspectj-autoproxy/>
+    <aop:config proxy-target-class="true">
+        <aop:pointcut expression="execution(* *com.appsys.services..*(..))" id="transService"/>
+        <aop:advisor advice-ref="myAdvice" pointcut-ref="transService"/>
+    </aop:config>
+
+</beans>

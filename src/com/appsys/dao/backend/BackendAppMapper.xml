@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.appsys.dao.backend.BackendAppMapper">
+
+	 <!--获得APP总数(总榜)-->
+    <select id="getAllAPPList" resultType="appInfo">
+        select * ,(select categoryName from app_category where a.categoryLevel1=id) as categoryLevel1Name ,
+                  (select categoryName from app_category where a.categoryLevel2=id) as categoryLevel2Name ,
+                  (select categoryName from app_category where a.categoryLevel3=id) as categoryLevel3Name
+           from app_info a order by  a.downloads desc limit 0,5
+    </select>
+
+    <!--获得应用类型APP总数(应用排行榜)-->
+    <select id="getApplicationList" resultType="appInfo">
+        select * ,(select categoryName from app_category where a.categoryLevel1=id) as categoryLevel1Name ,
+                  (select categoryName from app_category where a.categoryLevel2=id) as categoryLevel2Name ,
+                  (select categoryName from app_category where a.categoryLevel3=id) as categoryLevel3Name
+               from  app_info a where  a.categoryLevel1=1 order by `downloads` desc limit 0,5
+    </select>
+
+    <!--获得游戏类型APP总数(游戏排行榜)-->
+    <select id="getGameList" resultType="appInfo">
+        select * ,(select categoryName from app_category where a.categoryLevel1=id) as categoryLevel1Name ,
+                  (select categoryName from app_category where a.categoryLevel2=id) as categoryLevel2Name ,
+                  (select categoryName from app_category where a.categoryLevel3=id) as categoryLevel3Name
+               from  app_info a where  a.categoryLevel1=2 order by `downloads` desc limit 0,5
+    </select>
+    
+	 <!-- 通过类型编码和类型Id查询类型类 -->
+    <select id="getDataDictionaryByTypeCodeAndValueId" resultType="dataDictionary">
+    	select d.* from data_dictionary d
+        <trim prefix="where" prefixOverrides="and | or">
+            <if test="typeCode != null and typeCode != '' ">
+              and d.typeCode = #{typeCode}
+            </if>
+            <if test="valueId != null and valueId != '' ">
+              and d.valueId = #{valueId}
+            </if>
+        </trim>
+    </select>
+    
+    <!-- 根据条件和分页查询待审核APP列表 -->
+    <resultMap type="appInfo" id="getAPPListMap">
+    	<id property="id" column="id"/>                    <!-- 软件id -->
+    	<result property="softwareName" column="softwareName"/>
+    	<result property="APKName" column="APKName"/>
+    	<result property="softwareSize" column="softwareSize"/>
+    	<result property="flatformId" column="flatformId"/>     <!-- 所属平台id -->
+    	<result property="categoryLevel1" column="categoryLevel1"/>     <!-- 一级分类id -->
+    	<result property="categoryLevel2" column="categoryLevel2"/>     <!-- 二级分类id -->
+    	<result property="categoryLevel3" column="categoryLevel3"/>     <!-- 三级分类id -->
+    	<result property="status" column="status"/>        <!-- 状态id -->
+    	<result property="downloads" column="downloads"/>  <!-- 下载次数 -->
+    	<result property="versionId" column="versionId"/>  <!-- 版本id -->
+    	
+    	<result property="flatformName" column="flatformName"/>     <!-- 所属平台名 -->
+    	<result property="categoryLevel1Name" column="categoryLevel1Name"/>     <!-- 一级分类名 -->
+    	<result property="categoryLevel2Name" column="categoryLevel2Name"/>     <!-- 二级分类名 -->
+    	<result property="categoryLevel3Name" column="categoryLevel3Name"/>     <!-- 三级分类名 -->
+    	<result property="statusName" column="statusName"/>        <!-- 状态名 -->
+    	<result property="versionNo" column="versionNo"/>  <!-- 版本名 -->
+    </resultMap>
+    
+    <select id="getAPPList" resultMap="getAPPListMap">  <!-- 得到APP基本信息列表 -->
+    	select a.*, (select valueName from data_dictionary where typeCode ="APP_FLATFORM" and valueId=a.flatformId) as flatformName,
+    				(select valueName from data_dictionary where typeCode ="APP_STATUS" and valueId=a.status) as statusName,
+    				(select categoryName from app_category where id=a.categoryLevel1) as categoryLevel1Name,
+    				(select categoryName from app_category where id=a.categoryLevel2) as categoryLevel2Name,
+    				(select categoryName from app_category where id=a.categoryLevel3) as categoryLevel3Name,
+    				(select versionNo from app_version where id=a.versionId) as versionNo
+    	from app_info a 
+   		<trim prefix="where" prefixOverrides="and | or">
+            <if test="softwareName != null and softwareName != '' ">
+              and a.softwareName like concat('%', #{softwareName}, '%')
+            </if>
+            <if test="flatformId != null and flatformId != '' ">
+              and a.flatformId = #{flatformId}
+            </if>
+            <if test="categoryLevel1 != null and categoryLevel1 != '' ">
+              and a.categoryLevel1 = #{categoryLevel1}
+            </if>
+            <if test="categoryLevel2 != null and categoryLevel2 != '' ">
+              and a.categoryLevel2 = #{categoryLevel2}
+            </if>
+            <if test="categoryLevel3 != null and categoryLevel3 != '' ">
+              and a.categoryLevel3 = #{categoryLevel3}
+            </if>
+            <if test="status != null and status != ''">
+            	and a.status=#{status}
+            </if>
+            
+            <!-- <if test="versionId != null and versionId != '' ">
+              and a.versionId = #{versionId}
+            </if> -->
+        </trim>
+        Order by a.creationDate desc limit #{currentPageNo} , #{pageSize};
+    </select>
+    
+    <!-- 得到查询到的APP条数 -->
+    <select id="getAPPCount" resultType="int">
+    	select count(0) from app_info a
+   		<trim prefix="where" prefixOverrides="and | or">
+            <if test="softwareName != null and softwareName != '' ">
+              and a.softwareName like concat('%', #{softwareName}, '%')
+            </if>
+            <if test="flatformId != null and flatformId != '' ">
+              and a.flatformId = #{flatformId}
+            </if>
+            <if test="categoryLevel1 != null and categoryLevel1 != '' ">
+              and a.categoryLevel1 = #{categoryLevel1}
+            </if>
+            <if test="categoryLevel2 != null and categoryLevel2 != '' ">
+              and a.categoryLevel2 = #{categoryLevel2}
+            </if>
+            <if test="categoryLevel3 != null and categoryLevel3 != '' ">
+              and a.categoryLevel3 = #{categoryLevel3}
+            </if>
+            <if test="status != null and status != ''">
+            	and a.status=#{status}
+            </if>
+        </trim>
+    </select>
+    
+    <!--查询已经审核的App信息  -->
+    <select id="getCheckedAPPList" resultMap="getAPPListMap">  <!-- 得到APP基本信息列表 -->
+    	select a.*, (select valueName from data_dictionary where typeCode ="APP_FLATFORM" and valueId=a.flatformId) as flatformName,
+    				(select valueName from data_dictionary where typeCode ="APP_STATUS" and valueId=a.status) as statusName,
+    				(select categoryName from app_category where id=a.categoryLevel1) as categoryLevel1Name,
+    				(select categoryName from app_category where id=a.categoryLevel2) as categoryLevel2Name,
+    				(select categoryName from app_category where id=a.categoryLevel3) as categoryLevel3Name,
+    				(select versionNo from app_version where id=a.versionId) as versionNo
+    	from app_info a where a.status in (2,3)
+        order by a.creationDate desc limit #{currentPageNo} , #{pageSize};
+    </select>
+    
+    <!-- 查询已经审核的APP 条数 -->
+    <select id="getCheckedAllCount" resultType="int"> 
+    	select count(*) from app_info where status in (2,3)
+    </select>
+    
+    <!-- 查询审核未通过的App数目 -->
+    <select id="getCheckedNotCount" resultType="int">
+    	select count(*) from app_info where status = 3
+    </select>
+    
+    <!-- 通过id 查询分类表 -->
+    <select id="selectCategoryBypId" resultType="AppCategory">
+    	select * from app_category where parentId = #{parentId}
+    </select>
+    
+    
+    <!-- 得到所有所属平台列表 -->
+    <resultMap type="dataDictionary" id="getAPPFlatFormMap">
+    	<id property="id" column="id"/>
+    	<result property="typeCode" column="typeCode"/>
+    	<result property="typeName" column="typeName"/>
+    	<result property="valueId" column="valueId"/>
+    	<result property="valueName" column="valueName"/>
+    </resultMap>
+    <select id="getAPPFlatForm" resultMap="getAPPFlatFormMap">
+    	select * from data_dictionary where typeCode='APP_FLATFORM'
+    </select>
+    
+    <!-- 通过id得到APPInfo类 -->
+    <select id="getAPPInfoById" resultType="appInfo">
+    	select * from app_info where id=#{id}
+    </select>
+    <!-- 通过id得到APPVersion类 -->
+    <select id="getAPPVersionById" resultType="appVersion">
+    	select v.*, d.valueName as publishStatusName from app_version v, data_dictionary d 
+    	where v.id=#{id} and v.publishStatus=d.valueId and d.typeCode='PUBLISH_STATUS'
+    </select>
+	
+	<!-- 通过id 查询类别名 -->
+    <select id="selectCategoryNameById" resultType="String">
+    	select categoryName from app_category where id=#{id}
+    </select>
+	
+	<!-- 通过typeCode和valueID，查找字典中对应的名字 -->
+    <select id="selectValueNameByIdAndTypeCode" resultType="String">
+    	select valueName from data_dictionary where valueId=#{valueId} and typeCode=#{typeCode}
+    </select>
+    
+    <!-- 通过审核结果和id更新APP状态 -->
+    <update id="updateAPPStatus">
+    	update app_info set status=#{status} where id=#{id}
+    </update>
+	
+
+</mapper>

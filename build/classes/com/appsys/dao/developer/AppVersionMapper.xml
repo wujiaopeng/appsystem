@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.appsys.dao.developer.AppVersionMapper">
+	<!-- 通过App软件的id查询版本信息列表 -->
+	<select id="selectVersionListByAppId" resultType="AppVersion">
+		select av.*,ai.softwareName as appName,dd.valueName as publishStatusName from app_version av,app_info ai,data_dictionary dd 
+			where dd.typeCode='PUBLISH_STATUS' and dd.valueId=av.publishStatus and ai.Id=av.appId and av.appId=#{appId}
+	</select>
+	<!-- 通过表单提交的数据，向app_version表中添加一条数据 -->
+	<insert id="addAppVersion" parameterType="AppVersion">
+		insert into app_version(appId,versionNo,versionInfo,publishStatus,downloadLink,
+			versionSize,createdBy,creationDate,apkLocPath,apkFileName)  
+			values(#{appId},#{versionNo},#{versionInfo},#{publishStatus},#{downloadLink},
+			#{versionSize},#{createdBy},#{creationDate},#{apkLocPath},#{apkFileName})
+	</insert>
+	<!-- 通过版本ID，查找最新版本信息 -->
+	<select id="selectAppVersionById" resultType="AppVersion">
+		select * from app_version where id=#{versionId}
+	</select>
+	<!-- 通过版本Id，进行修改最新版本记录 -->
+	<update id="modifyAppVersion" parameterType="AppVersion">
+		update app_version		
+		<set>
+		versionNo=#{versionNo},versionSize=#{versionSize},versionInfo=#{versionInfo},
+			<if test="apkLocPath!=null and apkLocPath!=''">
+				apkLocPath=#{apkLocPath},
+				downloadLink=#{downloadLink},
+				apkFileName=#{apkFileName},
+			</if>
+			modifyBy=#{modifyBy},modifyDate=#{modifyDate}
+		</set> 
+		<where>
+			<if test="id!=null">id=#{id}</if>
+		</where>
+	</update>
+	<!-- 通过版本Id，进行删除最新版本的文件记录 -->
+	<update id="deleteFileById">
+		update app_version set downloadLink='',apkLocPath='',apkFileName=''
+			where id=#{versionId}
+	</update>
+</mapper>
